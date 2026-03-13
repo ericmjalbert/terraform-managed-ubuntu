@@ -1,0 +1,8 @@
+# Managed by terraform-managed-ubuntu — manual edits will be overwritten.
+# Note: actual key files are NOT managed by Terraform.
+
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
