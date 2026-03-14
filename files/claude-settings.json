@@ -1,0 +1,12 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "model": "haiku",
+  "statusLine": {
+    "type": "command",
+    "command": "bash /home/ericmjalbert/.claude/statusline-command.sh"
+  },
+  "effortLevel": "medium"
+}

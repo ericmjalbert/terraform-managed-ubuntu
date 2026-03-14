@@ -14,14 +14,14 @@ terraform {
       source  = "ericmjalbert/nvim"
       version = "~> 0.1"
     }
-    # tmux = {
-    #   source  = "ericmjalbert/tmux"
-    #   version = "~> 0.1"
-    # }
-    # claude = {
-    #   source  = "ericmjalbert/claude"
-    #   version = "~> 0.1"
-    # }
+    tmux = {
+      source  = "ericmjalbert/tmux"
+      version = "~> 0.1"
+    }
+    claude = {
+      source  = "ericmjalbert/claude"
+      version = "~> 0.1"
+    }
     dotfiles = {
       source  = "ericmjalbert/dotfiles"
       version = "~> 0.1"
@@ -46,3 +46,7 @@ provider "apt" {}
 provider "dotfiles" {}
 
 provider "nvim" {}
+
+provider "tmux" {}
+
+provider "claude" {}

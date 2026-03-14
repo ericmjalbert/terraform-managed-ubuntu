@@ -16,8 +16,8 @@ Goal: Declaratively manage an Ubuntu 22.04 desktop via OpenTofu. Each `tofu appl
 | `terraform-provider-apt` | ericmjalbert/terraform-provider-apt | `apt_package` | `apt_installed` | **1** ✅ |
 | `terraform-provider-snap` | ericmjalbert/terraform-provider-snap | `snap_package` | `snap_installed` | 4 |
 | `terraform-provider-nvim` | ericmjalbert/terraform-provider-nvim | `nvim_config` | — | **2** ✅ |
-| `terraform-provider-tmux` | ericmjalbert/terraform-provider-tmux | `tmux_config` | — | 3 |
-| `terraform-provider-claude` | ericmjalbert/terraform-provider-claude | `claude_*` (3 resources) | — | 3 |
+| `terraform-provider-tmux` | ericmjalbert/terraform-provider-tmux | `tmux_config` | — | **3** ✅ |
+| `terraform-provider-claude` | ericmjalbert/terraform-provider-claude | `claude_global_config`, `claude_settings` | — | **3** ✅ |
 | `terraform-provider-dotfiles` | ericmjalbert/terraform-provider-dotfiles | `dotfiles_config` | `dotfiles_existing` | **2** ✅ |
 | `terraform-provider-golang` | ericmjalbert/terraform-provider-golang | `golang_install` | — | 5 |
 | `terraform-provider-pipx` | ericmjalbert/terraform-provider-pipx | `pipx_package` | `pipx_installed` | 4 |
@@ -124,20 +124,42 @@ Goal: Declaratively manage an Ubuntu 22.04 desktop via OpenTofu. Each `tofu appl
 
 ---
 
-### Phase 3 — Remaining File-Based: `tmux` + `claude`
+### ✅ Phase 3 — Remaining File-Based: `tmux` + `claude` [COMPLETE]
 
-**Status**: Not started
+**Status**: Done (2026-03-14)
 
 **Deliverables:**
-- [ ] Build `terraform-provider-tmux` (copy pattern from nvim)
-- [ ] Build `terraform-provider-claude` (3 resources: config, settings, script)
-- [ ] Write modules: `tmux.tf`, `claude.tf` (uncomment and wire up)
-- [ ] Test on existing machine
+- [x] Build `terraform-provider-tmux` (copy pattern from nvim, no Lua validation)
+- [x] Build `terraform-provider-claude` (2 resources: `claude_global_config` + `claude_settings` with JSON validation)
+- [x] Write modules: `tmux.tf`, `claude.tf` (uncomment and wire up)
+- [x] Create content files: `claude-global.md`, `claude-settings.json`
+- [x] Test on existing machine
 
-**Notes:**
-- Both follow the same pattern as dotfiles/nvim
-- Use providerlib/fileresource for CRUD
-- Trivial to build once Phase 2 is done
+**Implementation notes:**
+- **tmux provider**: Manages `.tmux.conf` with file permissions attribute
+  - Single `tmux_config` resource using fileresource CRUD
+  - Permissions defaulted to "0644", fully computed
+  - No special validation (simple text config)
+- **claude provider**: Manages Claude Code configuration
+  - `claude_global_config` resource: Markdown file (`~/.claude/CLAUDE.md`)
+  - `claude_settings` resource: JSON file with validation (`~/.claude/settings.json`)
+  - Both use fileresource CRUD with permissions support
+  - JSON validation in Create/Update using `json.Unmarshal`
+- **File organization**:
+  - Content files stored in `files/claude-global.md` and `files/claude-settings.json`
+  - Both providers use standard fileresource pattern for all CRUD operations
+
+**Key files:**
+- `terraform-provider-tmux/` — 4 files (main, provider, resource, go.mod)
+- `terraform-provider-claude/` — 5 files (main, provider, 2 resources, go.mod)
+- Updated `.terraformrc` with dev_overrides for tmux and claude
+- Enabled resources in `tmux.tf` and `claude.tf`
+
+**Test results:**
+- ✅ `tofu plan` shows 3 resources to create (tmux_config + claude_global_config + claude_settings)
+- ✅ `tofu apply` successfully creates all files with correct permissions
+- ✅ `tofu plan` shows "No changes" (idempotent)
+- ✅ Files created: `~/.tmux.conf`, `~/.claude/CLAUDE.md`, `~/.claude/settings.json`
 
 ---
 
@@ -183,8 +205,8 @@ provider_installation {
     "ericmjalbert/apt"      = "/home/ericmjalbert/go/bin"
     "ericmjalbert/dotfiles" = "/home/ericmjalbert/go/bin"
     "ericmjalbert/nvim"     = "/home/ericmjalbert/go/bin"
-    "ericmjalbert/tmux"     = "/home/ericmjalbert/go/bin"     # when implemented
-    "ericmjalbert/claude"   = "/home/ericmjalbert/go/bin"     # when implemented
+    "ericmjalbert/tmux"     = "/home/ericmjalbert/go/bin"
+    "ericmjalbert/claude"   = "/home/ericmjalbert/go/bin"
   }
   direct {}
 }
@@ -252,8 +274,8 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 | terraform-provider-apt | https://github.com/ericmjalbert/terraform-provider-apt | Apt package management ✅ |
 | terraform-provider-dotfiles | https://github.com/ericmjalbert/terraform-provider-dotfiles | File management ✅ |
 | terraform-provider-nvim | https://github.com/ericmjalbert/terraform-provider-nvim | Neovim config ✅ |
-| terraform-provider-tmux | (not created yet) | Tmux config |
-| terraform-provider-claude | (not created yet) | Claude Code config |
+| terraform-provider-tmux | https://github.com/ericmjalbert/terraform-provider-tmux | Tmux config ✅ |
+| terraform-provider-claude | https://github.com/ericmjalbert/terraform-provider-claude | Claude Code config ✅ |
 | terraform-provider-snap | (not created yet) | Snap package management |
 | terraform-provider-pipx | (not created yet) | Python CLI tools |
 | terraform-provider-github-release | (not created yet) | Binary downloads |
@@ -275,7 +297,7 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 
 - [x] Phase 1: `tofu plan` shows 0 changes for managed apt packages on existing machine ✅
 - [x] Phase 2: `tofu plan` shows 0 changes for managed config files; manual edit → `tofu plan` shows drift ✅
-- [ ] Phase 3: All file-based configs under management (tmux.tf, claude.tf)
+- [x] Phase 3: All file-based configs under management (tmux.tf, claude.tf) ✅
 - [ ] Phase 4: Snap and pipx packages managed
 - [ ] Phase 5: Full end-to-end: spin up fresh Ubuntu VM, run `bootstrap.sh`, verify setup matches current machine
 - [ ] Audit: `tofu output` (or `tofu console`) lists all installed-but-unmanaged packages via data sources
@@ -283,4 +305,5 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 **Completed tests:**
 - Phase 1: All 11 curated apt packages managed and idempotent
 - Phase 2: bashrc, gitconfig, init.lua created and idempotent via `tofu apply`
+- Phase 3: tmux_config, claude_global_config, claude_settings created and idempotent via `tofu apply`
 
