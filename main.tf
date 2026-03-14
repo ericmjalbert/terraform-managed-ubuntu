@@ -10,10 +10,10 @@ terraform {
     #   source  = "ericmjalbert/snap"
     #   version = "~> 0.1"
     # }
-    # nvim = {
-    #   source  = "ericmjalbert/nvim"
-    #   version = "~> 0.1"
-    # }
+    nvim = {
+      source  = "ericmjalbert/nvim"
+      version = "~> 0.1"
+    }
     # tmux = {
     #   source  = "ericmjalbert/tmux"
     #   version = "~> 0.1"
@@ -44,3 +44,5 @@ terraform {
 provider "apt" {}
 
 provider "dotfiles" {}
+
+provider "nvim" {}

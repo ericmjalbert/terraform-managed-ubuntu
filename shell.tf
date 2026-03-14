@@ -1,10 +1,10 @@
 # Shell configuration files managed via the dotfiles provider.
 
-# resource "dotfile" "bashrc" {
-#   path        = "${var.home}/.bashrc"
-#   content     = file("${path.module}/files/bashrc")
-#   permissions = "0644"
-# }
+resource "dotfiles_config" "bashrc" {
+  path        = "${var.home}/.bashrc"
+  content     = file("${path.module}/files/bashrc")
+  permissions = "0644"
+}
 
 # resource "dotfile" "zshrc" {
 #   path        = "${var.home}/.zshrc"
