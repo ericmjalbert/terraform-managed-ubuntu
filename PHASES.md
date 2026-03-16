@@ -14,14 +14,14 @@ Goal: Declaratively manage an Ubuntu 22.04 desktop via OpenTofu. Each `tofu appl
 | Provider | Repo | Resources | Data Sources | Phase |
 |---|---|---|---|---|
 | `terraform-provider-apt` | ericmjalbert/terraform-provider-apt | `apt_package` | `apt_installed` | **1** ✅ |
-| `terraform-provider-snap` | ericmjalbert/terraform-provider-snap | `snap_package` | `snap_installed` | 4 |
+| `terraform-provider-snap` | ericmjalbert/terraform-provider-snap | `snap_package` | `snap_installed` | **4** ✅ |
 | `terraform-provider-nvim` | ericmjalbert/terraform-provider-nvim | `nvim_config` | — | **2** ✅ |
 | `terraform-provider-tmux` | ericmjalbert/terraform-provider-tmux | `tmux_config` | — | **3** ✅ |
 | `terraform-provider-claude` | ericmjalbert/terraform-provider-claude | `claude_global_config`, `claude_settings` | — | **3** ✅ |
 | `terraform-provider-dotfiles` | ericmjalbert/terraform-provider-dotfiles | `dotfiles_config` | `dotfiles_existing` | **2** ✅ |
 | `terraform-provider-golang` | ericmjalbert/terraform-provider-golang | `golang_install` | — | 5 |
-| `terraform-provider-pipx` | ericmjalbert/terraform-provider-pipx | `pipx_package` | `pipx_installed` | 4 |
-| `terraform-provider-github-release` | ericmjalbert/terraform-provider-github-release | `github_release_binary` | — | 4 |
+| `terraform-provider-pipx` | ericmjalbert/terraform-provider-pipx | `pipx_package` | `pipx_installed` | **4** ✅ |
+| `terraform-provider-github-release` | ericmjalbert/terraform-provider-github-release | `github-release_binary` | — | **4** ✅ |
 
 ### Shared Library
 
@@ -163,20 +163,48 @@ Goal: Declaratively manage an Ubuntu 22.04 desktop via OpenTofu. Each `tofu appl
 
 ---
 
-### Phase 4 — Package Providers: `snap` + `pipx` + `github-release`
+### ✅ Phase 4 — Package Providers: `snap` + `pipx` + `github-release` [COMPLETE]
 
-**Status**: Not started
+**Status**: Done (2026-03-15)
 
 **Deliverables:**
-- [ ] Build `terraform-provider-snap` (similar pattern to apt)
-- [ ] Build `terraform-provider-pipx` (similar pattern to apt)
-- [ ] Build `terraform-provider-github-release` (download binaries from GitHub releases)
-- [ ] Write modules: `devtools.tf`, `python.tf` (uncomment and wire up)
-- [ ] Test on existing machine
+- [x] Build `terraform-provider-snap` (similar pattern to apt)
+- [x] Build `terraform-provider-pipx` (similar pattern to apt)
+- [x] Build `terraform-provider-github-release` (download + extract binaries from GitHub releases)
+- [x] Write modules: `devtools.tf`, `python.tf` (uncomment and wire up)
+- [x] Test on existing machine
 
-**Notes:**
-- `snap` and `pipx` follow apt pattern (shell execution + locking)
-- `github-release` new pattern: download + extract binary
+**Implementation notes:**
+- **snap provider**: Manages snap packages with classic confinement support
+  - `snap_package` resource: name, channel, classic (bool), version (computed), ensure
+  - `snap_installed` data source: lists all installed snaps
+  - Uses `sudo snap install/remove` with `--classic` flag support
+- **pipx provider**: Manages Python CLI tools via pipx
+  - `pipx_package` resource: name, version (computed), ensure
+  - `pipx_installed` data source: lists all installed pipx packages
+  - Uses `pipx install/uninstall` (no sudo needed)
+- **github-release provider**: Downloads and installs binaries from GitHub releases
+  - `github-release_binary` resource: repo, tag ("latest" supported), asset_pattern, binary_name, binary_path_in_archive, install_path, installed_version
+  - Downloads tar.gz, extracts binary, sudo-installs with chmod 755
+  - Supports version drift detection for "latest" tag
+- **Resources deployed**:
+  - `devtools.tf`: snap_package.opentofu (classic=true), snap_package.firefox, github-release_binary.gh (v2.67.0)
+  - `python.tf`: pipx_package.aider_install
+- Updated `.terraformrc` with dev_overrides for all three providers
+- Generated `.terraform.lock.hcl` for provider version management
+
+**Key files:**
+- `terraform-provider-snap/` — 5 files (main, provider, cmd_executor, resource, datasource)
+- `terraform-provider-pipx/` — 5 files (main, provider, cmd_executor, resource, datasource)
+- `terraform-provider-github-release/` — 4 files (main, provider, resource, go.mod)
+- Updated `main.tf`, `devtools.tf`, `python.tf`
+- Updated `.terraformrc` with new provider overrides
+
+**Test results:**
+- ✅ `tofu plan` shows 4 resources to create (snap opentofu/firefox, pipx aider-install, github-release gh)
+- ✅ `tofu apply` successfully creates all resources
+- ✅ `tofu plan` shows "No changes" (idempotent)
+- ✅ Manual verification: `snap list opentofu`, `snap list firefox`, `pipx list`, `gh --version` all working
 
 ---
 
@@ -276,9 +304,9 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 | terraform-provider-nvim | https://github.com/ericmjalbert/terraform-provider-nvim | Neovim config ✅ |
 | terraform-provider-tmux | https://github.com/ericmjalbert/terraform-provider-tmux | Tmux config ✅ |
 | terraform-provider-claude | https://github.com/ericmjalbert/terraform-provider-claude | Claude Code config ✅ |
-| terraform-provider-snap | (not created yet) | Snap package management |
-| terraform-provider-pipx | (not created yet) | Python CLI tools |
-| terraform-provider-github-release | (not created yet) | Binary downloads |
+| terraform-provider-snap | https://github.com/ericmjalbert/terraform-provider-snap | Snap package management ✅ |
+| terraform-provider-pipx | https://github.com/ericmjalbert/terraform-provider-pipx | Python CLI tools ✅ |
+| terraform-provider-github-release | https://github.com/ericmjalbert/terraform-provider-github-release | Binary downloads ✅ |
 | terraform-provider-golang | (not created yet) | Go runtime |
 
 ---
@@ -298,7 +326,7 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 - [x] Phase 1: `tofu plan` shows 0 changes for managed apt packages on existing machine ✅
 - [x] Phase 2: `tofu plan` shows 0 changes for managed config files; manual edit → `tofu plan` shows drift ✅
 - [x] Phase 3: All file-based configs under management (tmux.tf, claude.tf) ✅
-- [ ] Phase 4: Snap and pipx packages managed
+- [x] Phase 4: Snap and pipx packages managed; GitHub release binary downloaded ✅
 - [ ] Phase 5: Full end-to-end: spin up fresh Ubuntu VM, run `bootstrap.sh`, verify setup matches current machine
 - [ ] Audit: `tofu output` (or `tofu console`) lists all installed-but-unmanaged packages via data sources
 
@@ -306,4 +334,5 @@ This ensures only one apt-get runs at a time, even with parallel Terraform opera
 - Phase 1: All 11 curated apt packages managed and idempotent
 - Phase 2: bashrc, gitconfig, init.lua created and idempotent via `tofu apply`
 - Phase 3: tmux_config, claude_global_config, claude_settings created and idempotent via `tofu apply`
+- Phase 4: snap_package.opentofu (classic), snap_package.firefox, pipx_package.aider_install, github-release_binary.gh created and idempotent via `tofu apply`
 
