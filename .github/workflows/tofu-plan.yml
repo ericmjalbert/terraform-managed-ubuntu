@@ -1,0 +1,98 @@
+name: OpenTofu Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+
+jobs:
+  tofu-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.6.0
+
+      - name: Build custom providers
+        run: |
+          cd ../providerlib && go build -o /home/runner/go/bin/libprovider.a ./...
+
+          # Build all custom providers
+          for provider in apt snap nvim tmux claude dotfiles pipx github-release golang; do
+            cd ../terraform-provider-$provider
+            go build -o /home/runner/go/bin/terraform-provider-$provider .
+          done
+        working-directory: providerlib
+
+      - name: Configure Terraform
+        run: |
+          mkdir -p ~/.terraformrc
+          cat > ~/.terraformrc << 'EOF'
+          provider_installation {
+            dev_overrides {
+              "ericmjalbert/apt"            = "/home/runner/go/bin"
+              "ericmjalbert/dotfiles"       = "/home/runner/go/bin"
+              "ericmjalbert/nvim"           = "/home/runner/go/bin"
+              "ericmjalbert/tmux"           = "/home/runner/go/bin"
+              "ericmjalbert/claude"         = "/home/runner/go/bin"
+              "ericmjalbert/snap"           = "/home/runner/go/bin"
+              "ericmjalbert/pipx"           = "/home/runner/go/bin"
+              "ericmjalbert/github-release" = "/home/runner/go/bin"
+              "ericmjalbert/golang"         = "/home/runner/go/bin"
+            }
+            direct {}
+          }
+          EOF
+
+      - name: OpenTofu Plan
+        id: plan
+        run: tofu plan -no-color
+        working-directory: terraform-managed-ubuntu
+
+      - name: Comment Plan on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const planFile = '${{ steps.plan.outputs.stdout }}';
+
+            // For now, just post success/failure
+            if ('${{ steps.plan.outcome }}' === 'success') {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '✅ OpenTofu plan successful - no configuration errors detected'
+              });
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '❌ OpenTofu plan failed - please check the logs'
+              });
+            }

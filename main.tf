@@ -26,10 +26,10 @@ terraform {
       source  = "ericmjalbert/dotfiles"
       version = "~> 0.1"
     }
-    # golang = {
-    #   source  = "ericmjalbert/golang"
-    #   version = "~> 0.1"
-    # }
+    golang = {
+      source  = "ericmjalbert/golang"
+      version = "~> 0.1"
+    }
     pipx = {
       source  = "ericmjalbert/pipx"
       version = "~> 0.1"
@@ -56,3 +56,5 @@ provider "nvim" {}
 provider "tmux" {}
 
 provider "claude" {}
+
+provider "golang" {}
