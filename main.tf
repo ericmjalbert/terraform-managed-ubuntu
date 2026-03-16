@@ -6,10 +6,10 @@ terraform {
       source  = "ericmjalbert/apt"
       version = "~> 0.1"
     }
-    # snap = {
-    #   source  = "ericmjalbert/snap"
-    #   version = "~> 0.1"
-    # }
+    snap = {
+      source  = "ericmjalbert/snap"
+      version = "~> 0.1"
+    }
     nvim = {
       source  = "ericmjalbert/nvim"
       version = "~> 0.1"
@@ -30,18 +30,24 @@ terraform {
     #   source  = "ericmjalbert/golang"
     #   version = "~> 0.1"
     # }
-    # pipx = {
-    #   source  = "ericmjalbert/pipx"
-    #   version = "~> 0.1"
-    # }
-    # github-release = {
-    #   source  = "ericmjalbert/github-release"
-    #   version = "~> 0.1"
-    # }
+    pipx = {
+      source  = "ericmjalbert/pipx"
+      version = "~> 0.1"
+    }
+    github-release = {
+      source  = "ericmjalbert/github-release"
+      version = "~> 0.1"
+    }
   }
 }
 
 provider "apt" {}
+
+provider "snap" {}
+
+provider "pipx" {}
+
+provider "github-release" {}
 
 provider "dotfiles" {}
 
